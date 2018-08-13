@@ -5,7 +5,7 @@ RUN apk upgrade --update && \
         bash \
         tini \
         su-exec \
-        curl \
+        curl
 
 ARG JAVA_DISTRIBUTION=jre
 ARG JAVA_MAJOR_VERSION=8
