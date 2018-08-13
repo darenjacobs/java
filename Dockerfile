@@ -5,9 +5,7 @@ RUN apk upgrade --update && \
         bash \
         tini \
         su-exec \
-        curl && \
-    echo 'hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4' >> /etc/nsswitch.conf && \
-    curl https://raw.githubusercontent.com/vishnubob/wait-for-it/55c54a5abdfb32637b563b28cc088314b162195e/wait-for-it.sh -o /usr/bin/wait-for-it
+        curl \
 
 ARG JAVA_DISTRIBUTION=jre
 ARG JAVA_MAJOR_VERSION=8
