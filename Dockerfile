@@ -1,11 +1,4 @@
-FROM alpine:3.8
-
-RUN apk upgrade --update && \
-    apk add \
-        bash \
-        tini \
-        su-exec \
-        curl
+FROM darenjacobs/alpine:3.8
 
 ARG JAVA_DISTRIBUTION=jre
 ARG JAVA_MAJOR_VERSION=8
