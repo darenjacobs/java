@@ -1,52 +1,67 @@
 FROM darenjacobs/alpine:3.8
 
-# build parameters
-ENV JAVA_DISTRIBUTION=server-jre
-ENV JAVA_MAJOR_VERSION=8
-ENV JAVA_UPDATE_VERSION=171
-ENV JAVA_BUILD_NUMBER=11
-ENV JAVA_HASH=512cd62ec5174c3487ac17c61aaa89e8
-ENV GLIBC_VERSION=2.26-r0
+ARG JAVA_DISTRIBUTION=server-jre
+ARG JAVA_MAJOR_VERSION=8
+ARG JAVA_UPDATE_VERSION=latest
+ARG JAVA_BUILD_NUMBER=
+ARG JAVA_HASH=
+ARG BUILD_DATE=undefined
 
-ENV LANG en_US.UTF-8
-ENV JAVA_VERSION=1.${JAVA_MAJOR_VERSION}.0_${JAVA_UPDATE_VERSION}
-ENV JAVA_HOME=/opt/java/${JAVA_DISTRIBUTION}${JAVA_VERSION}
-# this needs to be adjusted for the server-jre, since its located under JAVA_HOME/jre. Important for working on <JRE>/lib/security/cacert
-ENV JRE_HOME=/opt/java/${JAVA_DISTRIBUTION}${JAVA_VERSION}/jre
-ENV JAVA_DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/"${JAVA_MAJOR_VERSION}"u"${JAVA_UPDATE_VERSION}"-b"${JAVA_BUILD_NUMBER}"/${JAVA_HASH}/"${JAVA_DISTRIBUTION}"-"${JAVA_MAJOR_VERSION}"u"${JAVA_UPDATE_VERSION}"-linux-x64.tar.gz
-ENV JAVA_OUTPUT_FILE="${JAVA_DISTRIBUTION}"-"${JAVA_MAJOR_VERSION}"u"${JAVA_UPDATE_VERSION}"-linux-x64.tar.gz
-ENV PATH=$PATH:$JAVA_HOME/bin
-
-RUN apk add --update \
-      ca-certificates \
-      wget \
-      curl \
-      bash && \
-    # Install latest glibc
-    wget --directory-prefix=/tmp https://github.com/andyshinn/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk && \
-    apk add --allow-untrusted /tmp/glibc-${GLIBC_VERSION}.apk && \
-    wget --directory-prefix=/tmp https://github.com/andyshinn/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-bin-${GLIBC_VERSION}.apk && \
-    apk add --allow-untrusted /tmp/glibc-bin-${GLIBC_VERSION}.apk && \
-    wget --directory-prefix=/tmp https://github.com/andyshinn/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-i18n-${GLIBC_VERSION}.apk && \
-    apk --allow-untrusted add /tmp/glibc-i18n-${GLIBC_VERSION}.apk && \
-    /usr/glibc-compat/bin/localedef -i en_US -f UTF-8 en_US.UTF-8 && \
-    # Install oracle java
-    curl --show-error --silent --location --retry 3 \
-      --header "Cookie: oraclelicense=accept-securebackup-cookie;" \
-      ${JAVA_DOWNLOAD_URL} \
-      -o /tmp/${JAVA_OUTPUT_FILE} && \
-    mkdir -p /opt/java && \
-    tar -xzf /tmp/${JAVA_OUTPUT_FILE} -C /opt/java/ && \
-    if  [ "${JAVA_DISTRIBUTION}" = "server-jre" ]; \
-      then mv /opt/java/jdk${JAVA_VERSION} ${JAVA_HOME} ; \
+RUN if  [ "${JAVA_DISTRIBUTION}" = "jre" ]; \
+      then export JAVA_PACKAGE_POSTFIX_VERSION=-jre ; \
+      else export JAVA_PACKAGE_POSTFIX_VERSION= ; \
     fi && \
-    ln -s ${JAVA_HOME}/bin/java /usr/bin/java && \
+    export JAVA_VERSION=${JAVA_MAJOR_VERSION}.${JAVA_UPDATE_VERSION}.${JAVA_BUILD_NUMBER} && \
+    if  [ "${JAVA_UPDATE_VERSION}" = "latest" ]; \
+      then apk add --update openjdk${JAVA_MAJOR_VERSION}${JAVA_PACKAGE_POSTFIX_VERSION} ; \
+      else apk add --update "openjdk${JAVA_MAJOR_VERSION}${JAVA_PACKAGE_POSTFIX_VERSION}=${JAVA_VERSION}" ; \
+    fi && \
+    # Install latest glibc
+    ALPINE_GLIBC_BASE_URL="https://github.com/sgerrand/alpine-pkg-glibc/releases/download" && \
+    ALPINE_GLIBC_PACKAGE_VERSION="2.27-r0" && \
+    ALPINE_GLIBC_BASE_PACKAGE_FILENAME="glibc-$ALPINE_GLIBC_PACKAGE_VERSION.apk" && \
+    ALPINE_GLIBC_BIN_PACKAGE_FILENAME="glibc-bin-$ALPINE_GLIBC_PACKAGE_VERSION.apk" && \
+    ALPINE_GLIBC_I18N_PACKAGE_FILENAME="glibc-i18n-$ALPINE_GLIBC_PACKAGE_VERSION.apk" && \
+    apk add --no-cache --virtual=.build-dependencies wget ca-certificates && \
+    echo \
+        "-----BEGIN PUBLIC KEY-----\
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApZ2u1KJKUu/fW4A25y9m\
+        y70AGEa/J3Wi5ibNVGNn1gT1r0VfgeWd0pUybS4UmcHdiNzxJPgoWQhV2SSW1JYu\
+        tOqKZF5QSN6X937PTUpNBjUvLtTQ1ve1fp39uf/lEXPpFpOPL88LKnDBgbh7wkCp\
+        m2KzLVGChf83MS0ShL6G9EQIAUxLm99VpgRjwqTQ/KfzGtpke1wqws4au0Ab4qPY\
+        KXvMLSPLUp7cfulWvhmZSegr5AdhNw5KNizPqCJT8ZrGvgHypXyiFvvAH5YRtSsc\
+        Zvo9GI2e2MaZyo9/lvb+LbLEJZKEQckqRj4P26gmASrZEPStwc+yqy1ShHLA0j6m\
+        1QIDAQAB\
+        -----END PUBLIC KEY-----" | sed 's/   */\n/g' > "/etc/apk/keys/sgerrand.rsa.pub" && \
+    wget \
+        "$ALPINE_GLIBC_BASE_URL/$ALPINE_GLIBC_PACKAGE_VERSION/$ALPINE_GLIBC_BASE_PACKAGE_FILENAME" \
+        "$ALPINE_GLIBC_BASE_URL/$ALPINE_GLIBC_PACKAGE_VERSION/$ALPINE_GLIBC_BIN_PACKAGE_FILENAME" \
+        "$ALPINE_GLIBC_BASE_URL/$ALPINE_GLIBC_PACKAGE_VERSION/$ALPINE_GLIBC_I18N_PACKAGE_FILENAME" && \
+    apk add --no-cache \
+        "$ALPINE_GLIBC_BASE_PACKAGE_FILENAME" \
+        "$ALPINE_GLIBC_BIN_PACKAGE_FILENAME" \
+        "$ALPINE_GLIBC_I18N_PACKAGE_FILENAME" && \
+    \
+    rm "/etc/apk/keys/sgerrand.rsa.pub" && \
+    /usr/glibc-compat/bin/localedef --force --inputfile POSIX --charmap UTF-8 "$LANG" || true && \
+    echo "export LANG=$LANG" > /etc/profile.d/locale.sh && \
+    \
+    apk del glibc-i18n && \
+    \
+    rm "/root/.wget-hsts" && \
+    apk del .build-dependencies && \
+    rm \
+        "$ALPINE_GLIBC_BASE_PACKAGE_FILENAME" \
+        "$ALPINE_GLIBC_BIN_PACKAGE_FILENAME" \
+        "$ALPINE_GLIBC_I18N_PACKAGE_FILENAME" && \
     # Remove obsolete packages
     apk del \
       ca-certificates \
-      wget \
-      curl && \
+      wget && \
     # Clean caches and tmps
     rm -rf /var/cache/apk/* && \
     rm -rf /tmp/* && \
     rm -rf /var/log/*
+
+ENV JAVA_HOME=/usr/lib/jvm/default-jvm
+ENV PATH=$JAVA_HOME/bin:$PATH
