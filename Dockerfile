@@ -14,11 +14,6 @@ RUN if  [ "${JAVA_DISTRIBUTION}" = "jre" ]; \
       then apk add --update openjdk${JAVA_MAJOR_VERSION}${JAVA_PACKAGE_POSTFIX_VERSION} ; \
       else apk add --update "openjdk${JAVA_MAJOR_VERSION}${JAVA_PACKAGE_POSTFIX_VERSION}=${JAVA_VERSION}" ; \
     fi && \
-    # Install latest glibc
-    wget --directory-prefix=/tmp https://github.com/andyshinn/alpine-pkg-glibc/releases/download/2.22-r8/glibc-2.22-r8.apk && \
-    apk add --allow-untrusted /tmp/glibc-2.22-r8.apk && \
-    wget --directory-prefix=/tmp https://github.com/andyshinn/alpine-pkg-glibc/releases/download/2.22-r8/glibc-bin-2.22-r8.apk && \
-    apk add --allow-untrusted /tmp/glibc-bin-2.22-r8.apk && \
     # Clean caches and tmps
     rm -rf /var/cache/apk/* && \
     rm -rf /tmp/* && \
