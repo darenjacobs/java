@@ -47,8 +47,6 @@ RUN if  [ "${JAVA_DISTRIBUTION}" = "jre" ]; \
     /usr/glibc-compat/bin/localedef --force --inputfile POSIX --charmap UTF-8 "$LANG" || true && \
     echo "export LANG=$LANG" > /etc/profile.d/locale.sh && \
     \
-    apk del glibc-i18n && \
-    \
     rm "/root/.wget-hsts" && \
     apk del .build-dependencies && \
     rm \
