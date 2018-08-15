@@ -8,6 +8,9 @@ ARG JAVA_HASH=
 ARG BUILD_DATE=undefined
 ENV LANG=C.UTF-8
 
+RUN apk add --update \
+    ca-certificates
+
 RUN if  [ "${JAVA_DISTRIBUTION}" = "jre" ]; \
       then export JAVA_PACKAGE_POSTFIX_VERSION=-jre ; \
       else export JAVA_PACKAGE_POSTFIX_VERSION= ; \
@@ -55,7 +58,6 @@ RUN if  [ "${JAVA_DISTRIBUTION}" = "jre" ]; \
         "$ALPINE_GLIBC_I18N_PACKAGE_FILENAME" && \
     # Remove obsolete packages
     apk del \
-      ca-certificates \
       wget && \
     # Clean caches and tmps
     rm -rf /var/cache/apk/* && \
